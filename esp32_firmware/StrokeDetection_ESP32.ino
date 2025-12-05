@@ -28,14 +28,12 @@
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"  // Replace with your WiFi password
 
 // ===== Firebase Configuration =====
-#define API_KEY "YOUR_FIREBASE_API_KEY"                    // Replace with your Firebase API Key
-#define DATABASE_URL "YOUR_FIREBASE_DATABASE_URL"          // Replace with your Firebase Database URL
-#define USER_EMAIL "YOUR_USER_EMAIL"                       // Firebase user email
-#define USER_PASSWORD "YOUR_USER_PASSWORD"                 // Firebase user password
+#define DATABASE_URL "YOUR_FIREBASE_DATABASE_URL"          // Replace with your Firebase Database URL (e.g., https://your-project.firebaseio.com/)
+#define DATABASE_SECRET "YOUR_DATABASE_SECRET"             // Replace with your Firebase Database Secret (from Project Settings > Service Accounts > Database Secrets)
 
 // ===== Device Configuration =====
 #define DEVICE_ID "ESP32_STROKE_001"  // Unique device identifier
-String userId = "user_001";           // Will be set after authentication
+#define USER_ID "user_001"            // User ID for data path
 
 // ===== Pin Definitions =====
 #define ECG_LO_PLUS 4    // AD8232 LO+ pin
@@ -48,7 +46,6 @@ Adafruit_MPU6050 mpu;
 
 // ===== Firebase Objects =====
 FirebaseData fbdo;
-FirebaseAuth auth;
 FirebaseConfig config;
 
 // ===== Heart Rate Variables (MAX30102) =====
@@ -171,60 +168,47 @@ void initWiFi() {
 // ===== Firebase Initialization =====
 void initFirebase() {
   Serial.println("\n========================================");
-  Serial.println("  Initializing Firebase Authentication  ");
+  Serial.println("      Connecting to Firebase            ");
   Serial.println("========================================");
 
-  // Configure Firebase
-  config.api_key = API_KEY;
+  // Configure Firebase with Database URL and Secret
   config.database_url = DATABASE_URL;
+  config.signer.tokens.legacy_token = DATABASE_SECRET;
 
-  // Set user credentials for authentication
-  auth.user.email = USER_EMAIL;
-  auth.user.password = USER_PASSWORD;
+  Serial.print("Database URL: ");
+  Serial.println(DATABASE_URL);
+  Serial.print("Connecting");
 
-  Serial.print("Authenticating user: ");
-  Serial.println(USER_EMAIL);
-
-  // Assign the callback function for token generation status
-  config.token_status_callback = tokenStatusCallback;
-
-  // Set token refresh interval (optional, default is 3600 seconds)
-  config.signer.tokens.token_ttl = 3600;  // 1 hour
-
-  // Initialize Firebase with config and auth
-  Firebase.begin(&config, &auth);
+  // Initialize Firebase
+  Firebase.begin(&config, nullptr);
   Firebase.reconnectWiFi(true);
 
-  // Wait for authentication to complete
-  Serial.print("Waiting for authentication");
+  // Wait for connection
   int attempts = 0;
-  while (!Firebase.ready() && attempts < 30) {
+  while (!Firebase.ready() && attempts < 20) {
     Serial.print(".");
     delay(500);
     attempts++;
   }
   Serial.println();
 
-  // Check authentication status
+  // Check connection status
   if (Firebase.ready()) {
     signupOK = true;
-
-    // Get authenticated user ID from token
-    userId = auth.token.uid.c_str();
-
-    Serial.println("\n✓ Firebase Authentication Successful!");
+    Serial.println("\n✓ Firebase Connected Successfully!");
     Serial.println("─────────────────────────────────────");
-    Serial.print("  Email: ");
-    Serial.println(USER_EMAIL);
+    Serial.print("  Database: ");
+    Serial.println(DATABASE_URL);
     Serial.print("  User ID: ");
-    Serial.println(userId);
-    Serial.print("  Token Type: ");
-    Serial.println(auth.token.token_type.c_str());
+    Serial.println(USER_ID);
+    Serial.print("  Device ID: ");
+    Serial.println(DEVICE_ID);
     Serial.println("─────────────────────────────────────");
 
-    // Verify database connection
-    Serial.print("Testing database connection... ");
-    if (Firebase.RTDB.getString(&fbdo, "/.info/connected")) {
+    // Test database connection
+    Serial.print("Testing database write access... ");
+    String testPath = "users/" + String(USER_ID) + "/devices/" + String(DEVICE_ID) + "/status";
+    if (Firebase.RTDB.setString(&fbdo, testPath, "online")) {
       Serial.println("OK");
     } else {
       Serial.println("Failed");
@@ -233,18 +217,17 @@ void initFirebase() {
 
   } else {
     signupOK = false;
-    Serial.println("\n✗ Firebase Authentication Failed!");
+    Serial.println("\n✗ Firebase Connection Failed!");
     Serial.println("─────────────────────────────────────");
     Serial.println("  Possible reasons:");
-    Serial.println("  1. Invalid email or password");
-    Serial.println("  2. User account doesn't exist in Firebase");
+    Serial.println("  1. Incorrect Database URL");
+    Serial.println("  2. Invalid Database Secret");
     Serial.println("  3. Internet connection issues");
-    Serial.println("  4. Incorrect API key or Database URL");
-    Serial.println("  5. Email/Password authentication not enabled in Firebase Console");
+    Serial.println("  4. Database rules may be blocking access");
     Serial.println("─────────────────────────────────────");
-    Serial.println("\n  Please check your credentials and try again.");
-    Serial.println("  You can create a user account in Firebase Console:");
-    Serial.println("  Authentication > Users > Add User");
+    Serial.println("\n  Please verify your credentials:");
+    Serial.println("  - Database URL format: https://your-project.firebaseio.com/");
+    Serial.println("  - Get Database Secret from: Project Settings > Service Accounts > Database Secrets");
   }
 }
 
@@ -417,7 +400,7 @@ void detectStrokeRisk() {
 
 // ===== Send Data to Firebase =====
 void sendDataToFirebase() {
-  String path = "users/" + userId + "/devices/" + String(DEVICE_ID);
+  String path = "users/" + String(USER_ID) + "/devices/" + String(DEVICE_ID);
 
   // Create JSON object
   FirebaseJson json;
@@ -474,7 +457,7 @@ void sendDataToFirebase() {
 
 // ===== Send Alert to Firebase =====
 void sendAlert(String alertType, String message) {
-  String alertPath = "users/" + userId + "/alerts/" + String(millis());
+  String alertPath = "users/" + String(USER_ID) + "/alerts/" + String(millis());
 
   FirebaseJson alert;
   alert.set("type", alertType);
