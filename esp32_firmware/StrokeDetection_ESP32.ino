@@ -170,36 +170,81 @@ void initWiFi() {
 
 // ===== Firebase Initialization =====
 void initFirebase() {
-  Serial.println("\nInitializing Firebase...");
+  Serial.println("\n========================================");
+  Serial.println("  Initializing Firebase Authentication  ");
+  Serial.println("========================================");
 
+  // Configure Firebase
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
-  // Sign in with user credentials
+  // Set user credentials for authentication
   auth.user.email = USER_EMAIL;
   auth.user.password = USER_PASSWORD;
 
+  Serial.print("Authenticating user: ");
+  Serial.println(USER_EMAIL);
+
+  // Assign the callback function for token generation status
   config.token_status_callback = tokenStatusCallback;
 
+  // Set token refresh interval (optional, default is 3600 seconds)
+  config.signer.tokens.token_ttl = 3600;  // 1 hour
+
+  // Initialize Firebase with config and auth
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
 
-  // Wait for authentication
+  // Wait for authentication to complete
+  Serial.print("Waiting for authentication");
   int attempts = 0;
   while (!Firebase.ready() && attempts < 30) {
     Serial.print(".");
     delay(500);
     attempts++;
   }
+  Serial.println();
 
+  // Check authentication status
   if (Firebase.ready()) {
     signupOK = true;
-    userId = auth.token.uid.c_str();  // Get authenticated user ID
-    Serial.println("\n✓ Firebase Connected");
+
+    // Get authenticated user ID from token
+    userId = auth.token.uid.c_str();
+
+    Serial.println("\n✓ Firebase Authentication Successful!");
+    Serial.println("─────────────────────────────────────");
+    Serial.print("  Email: ");
+    Serial.println(USER_EMAIL);
     Serial.print("  User ID: ");
     Serial.println(userId);
+    Serial.print("  Token Type: ");
+    Serial.println(auth.token.token_type.c_str());
+    Serial.println("─────────────────────────────────────");
+
+    // Verify database connection
+    Serial.print("Testing database connection... ");
+    if (Firebase.RTDB.getString(&fbdo, "/.info/connected")) {
+      Serial.println("OK");
+    } else {
+      Serial.println("Failed");
+      Serial.println("  Error: " + fbdo.errorReason());
+    }
+
   } else {
-    Serial.println("\n✗ Firebase Connection Failed!");
+    signupOK = false;
+    Serial.println("\n✗ Firebase Authentication Failed!");
+    Serial.println("─────────────────────────────────────");
+    Serial.println("  Possible reasons:");
+    Serial.println("  1. Invalid email or password");
+    Serial.println("  2. User account doesn't exist in Firebase");
+    Serial.println("  3. Internet connection issues");
+    Serial.println("  4. Incorrect API key or Database URL");
+    Serial.println("  5. Email/Password authentication not enabled in Firebase Console");
+    Serial.println("─────────────────────────────────────");
+    Serial.println("\n  Please check your credentials and try again.");
+    Serial.println("  You can create a user account in Firebase Console:");
+    Serial.println("  Authentication > Users > Add User");
   }
 }
 

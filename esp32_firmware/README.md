@@ -107,37 +107,111 @@ Open `StrokeDetection_ESP32.ino` and update:
 
 ### 2. Firebase Configuration
 
-#### Create Firebase Project
+The ESP32 uses **Email/Password Authentication** to securely connect to Firebase. Follow these steps carefully:
+
+#### Step 1: Create Firebase Project
 1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project
-3. Enable **Realtime Database**
-   - Go to `Build > Realtime Database`
-   - Click "Create Database"
-   - Start in "Test Mode" (for development)
-4. Enable **Authentication**
-   - Go to `Build > Authentication`
-   - Enable "Email/Password" provider
-   - Create a user account
+2. Click "Add project" or "Create a project"
+3. Enter a project name (e.g., "StrokeGuardian")
+4. Accept terms and click "Continue"
+5. Disable Google Analytics (optional) and click "Create project"
+6. Wait for project creation, then click "Continue"
 
-#### Get Firebase Credentials
-1. **API Key**:
-   - Go to Project Settings (gear icon)
-   - Under "General" tab, copy "Web API Key"
+#### Step 2: Enable Authentication with Email/Password
+1. In Firebase Console, click on **"Authentication"** in the left sidebar
+2. Click **"Get Started"** if it's your first time
+3. Go to **"Sign-in method"** tab
+4. Click on **"Email/Password"**
+5. Toggle **"Enable"** to ON
+6. Click **"Save"**
 
-2. **Database URL**:
-   - Go to Realtime Database
-   - Copy the URL (e.g., `https://your-project.firebaseio.com/`)
+#### Step 3: Create a User Account for ESP32
+⚠️ **Important**: The ESP32 needs a user account to authenticate with Firebase.
 
-3. **User Credentials**:
-   - Use the email/password you created in Authentication
+1. Still in **Authentication**, go to the **"Users"** tab
+2. Click **"Add user"** button
+3. Enter:
+   - **Email**: `esp32@yourdomain.com` (or any email you prefer)
+   - **Password**: Create a strong password (min 6 characters)
+4. Click **"Add user"**
+5. **Save these credentials** - you'll need them for the ESP32 code
 
-#### Update Firmware
-```cpp
-#define API_KEY "YOUR_FIREBASE_API_KEY"
-#define DATABASE_URL "https://your-project.firebaseio.com/"
-#define USER_EMAIL "user@example.com"
-#define USER_PASSWORD "your_password"
+**Example:**
 ```
+Email: esp32device@gmail.com
+Password: MySecurePass123!
+```
+
+#### Step 4: Enable Realtime Database
+1. In Firebase Console, click on **"Realtime Database"** in the left sidebar
+2. Click **"Create Database"**
+3. Select a database location (choose closest to you)
+4. Start in **"Test mode"** for development (you can change this later)
+5. Click **"Enable"**
+
+#### Step 5: Set Database Security Rules (Important!)
+1. In Realtime Database, go to **"Rules"** tab
+2. Replace the rules with:
+```json
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    }
+  }
+}
+```
+3. Click **"Publish"**
+
+This ensures only authenticated users can read/write their own data.
+
+#### Step 6: Get Firebase Credentials
+
+**1. Get API Key:**
+   - Click on the **⚙️ Settings icon** (gear icon next to "Project Overview")
+   - Go to **"Project settings"**
+   - Scroll down to **"Your apps"** section
+   - Under **"Web API Key"**, copy the key
+   - Example: `AIzaSyD1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m`
+
+**2. Get Database URL:**
+   - Go to **"Realtime Database"** in sidebar
+   - Look at the top of the page for the database URL
+   - It should look like: `https://your-project-default-rtdb.firebaseio.com/`
+   - Copy the entire URL including `https://` and trailing `/`
+
+**3. Use Your User Credentials:**
+   - Email: The email you created in Step 3
+   - Password: The password you created in Step 3
+
+#### Step 7: Update ESP32 Firmware
+
+Open `StrokeDetection_ESP32.ino` and update these lines:
+
+```cpp
+// ===== Firebase Configuration =====
+#define API_KEY "AIzaSyD1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m"  // Your Web API Key
+#define DATABASE_URL "https://strokeguardian-default-rtdb.firebaseio.com/"  // Your Database URL
+#define USER_EMAIL "esp32device@gmail.com"  // Email you created in Authentication
+#define USER_PASSWORD "MySecurePass123!"    // Password for that email account
+```
+
+**Example Configuration:**
+```cpp
+// Real example (replace with your own!)
+#define API_KEY "AIzaSyBxC2yD3zE4aF5bG6cH7dI8eJ9fK0gL1h"
+#define DATABASE_URL "https://stroke-guardian-abc123.firebaseio.com/"
+#define USER_EMAIL "esp32device@gmail.com"
+#define USER_PASSWORD "SecurePassword123"
+```
+
+⚠️ **Security Note:**
+- Never share your API key or credentials publicly
+- Use different credentials for development and production
+- Change default passwords to strong, unique passwords
 
 ### 3. Device ID Configuration
 Update the device ID to uniquely identify your device:
@@ -237,11 +311,99 @@ users/
 - Check 2.4GHz network (ESP32 doesn't support 5GHz)
 - Ensure signal strength is adequate
 
+### Firebase Authentication Issues
+
+**Problem**: ESP32 shows "✗ Firebase Authentication Failed!"
+
+**Solutions**:
+
+1. **Verify Email/Password Provider is Enabled**
+   - Go to Firebase Console > Authentication > Sign-in method
+   - Ensure "Email/Password" is **Enabled**
+   - If not, enable it and click Save
+
+2. **Check User Account Exists**
+   - Go to Firebase Console > Authentication > Users
+   - Verify the email you're using in the code exists in the users list
+   - If not, click "Add user" and create the account
+
+3. **Verify Credentials are Correct**
+   - Double-check the email and password in your code
+   - Make sure there are no typos or extra spaces
+   - Password is case-sensitive!
+   ```cpp
+   #define USER_EMAIL "esp32device@gmail.com"  // Must match Firebase exactly
+   #define USER_PASSWORD "YourPassword123"     // Case-sensitive!
+   ```
+
+4. **Check API Key and Database URL**
+   - Verify your API Key is correct (from Project Settings)
+   - Ensure Database URL ends with `.firebaseio.com/` (with trailing slash)
+   - Example: `https://your-project-default-rtdb.firebaseio.com/`
+
+5. **Test User Credentials Manually**
+   - Try logging into Firebase Console with the same email/password
+   - If it doesn't work, reset the password in Authentication > Users
+
+6. **Check Serial Monitor Output**
+   When authentication fails, the ESP32 will show detailed error messages:
+   ```
+   ✗ Firebase Authentication Failed!
+   ─────────────────────────────────────
+     Possible reasons:
+     1. Invalid email or password
+     2. User account doesn't exist in Firebase
+     3. Internet connection issues
+     4. Incorrect API key or Database URL
+     5. Email/Password authentication not enabled
+   ```
+
+7. **Verify Internet Connection**
+   - Make sure ESP32 successfully connected to WiFi
+   - Look for "✓ WiFi Connected" message
+   - Check that you can access Firebase from your network
+
+8. **Database Rules Configuration**
+   - Ensure your Realtime Database rules allow authenticated access:
+   ```json
+   {
+     "rules": {
+       "users": {
+         "$uid": {
+           ".read": "$uid === auth.uid",
+           ".write": "$uid === auth.uid"
+         }
+       }
+     }
+   }
+   ```
+
+9. **Check Firebase Quota Limits**
+   - Firebase free tier has usage limits
+   - Check Firebase Console > Usage for any quota exceeded warnings
+
+**Expected Success Output:**
+```
+========================================
+  Initializing Firebase Authentication
+========================================
+Authenticating user: esp32device@gmail.com
+Waiting for authentication.............
+
+✓ Firebase Authentication Successful!
+─────────────────────────────────────
+  Email: esp32device@gmail.com
+  User ID: xXxYyYzZz123AbC456
+  Token Type: id_token
+─────────────────────────────────────
+Testing database connection... OK
+```
+
 ### Firebase Connection Issues
-- Verify API key and database URL
-- Check user credentials
-- Ensure Realtime Database rules allow read/write
-- Check internet connectivity
+- Verify API key and database URL format
+- Check user credentials match Firebase exactly
+- Ensure Realtime Database rules allow authenticated read/write
+- Verify internet connectivity and WiFi connection
 
 ### ECG Noise/No Signal
 - Verify electrode placement and skin contact
