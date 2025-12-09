@@ -21,15 +21,16 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-// Add this line for Firebase
-apply plugin: 'com.google.gms.google-services'
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
+}
 
 android {
     namespace "com.yourdomain.stroke_detection_app"
-    compileSdkVersion 33
+    compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -47,8 +48,8 @@ android {
 
     defaultConfig {
         applicationId "com.yourdomain.stroke_detection_app"
-        minSdkVersion 21
-        targetSdkVersion 33
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
