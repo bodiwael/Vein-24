@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'services/notification_service.dart';
+// import 'services/notification_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'utils/app_colors.dart';
@@ -30,7 +30,7 @@ void main() async {
   await Firebase.initializeApp();
 
   // Initialize Notification Service
-  await NotificationService().initialize();
+  // await NotificationService().initialize();
 
   runApp(const StrokeGuardianApp());
 }

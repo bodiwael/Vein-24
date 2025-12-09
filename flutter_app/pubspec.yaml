@@ -37,7 +37,7 @@ dependencies:
   intl: ^0.19.0
   shared_preferences: ^2.2.2
   permission_handler: ^11.1.0
-  flutter_local_notifications: ^16.3.0
+#  flutter_local_notifications: ^16.3.0
 
   # Network & Data
   http: ^1.1.2
@@ -52,10 +52,10 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
+    - assets/image/
     - assets/icons/
-
-  fonts:
-    - family: CustomIcons
-      fonts:
-        - asset: assets/fonts/CustomIcons.ttf
+#
+#  fonts:
+#    - family: CustomIcons
+#      fonts:
+#        - asset: assets/fonts/
