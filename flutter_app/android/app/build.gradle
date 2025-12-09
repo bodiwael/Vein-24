@@ -29,8 +29,8 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.yourdomain.stroke_detection_app"
-    compileSdk flutter.compileSdkVersion
+    namespace "com.example.bioflex"
+    compileSdk 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -47,7 +47,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.yourdomain.stroke_detection_app"
+        applicationId "com.example.bioflex"
         minSdk flutter.minSdkVersion
         targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()

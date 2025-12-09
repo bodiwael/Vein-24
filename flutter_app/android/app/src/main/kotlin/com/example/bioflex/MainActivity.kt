@@ -1,4 +1,4 @@
-package com.yourdomain.stroke_detection_app
+package com.example.bioflex
 
 import io.flutter.embedding.android.FlutterActivity
 
